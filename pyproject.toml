@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hibachi-spread-bot"
+version = "0.1.0"
+description = "Hibachi BTC/USDT-P spread capture market making bot"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "hibachi-xyz==0.3.0",
+  "pydantic",
+  "pydantic-settings",
+  "PyYAML",
+  "python-dotenv",
+  "anyio",
+  "orjson",
+  "pytest",
+  "pytest-asyncio",
+]
+
+[tool.setuptools]
+packages = ["hibachi_mm"]
+
