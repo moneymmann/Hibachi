@@ -31,6 +31,7 @@ cp config.example.yaml config.local.yaml
 # .env에 키 입력
 pytest -q
 python -m hibachi_mm.main inspect --config config.local.yaml
+python -m hibachi_mm.main security-check --config config.local.yaml
 python -m hibachi_mm.main dry-run --config config.local.yaml
 export HIBACHI_ENABLE_LIVE_TRADING=I_UNDERSTAND_PERP_RISK
 python -m hibachi_mm.main live --config config.local.yaml
@@ -38,6 +39,7 @@ python -m hibachi_mm.main live --config config.local.yaml
 
 ## CLI
 - `python -m hibachi_mm.main inspect --config config.local.yaml`
+- `python -m hibachi_mm.main security-check --config config.local.yaml`
 - `python -m hibachi_mm.main dry-run --config config.local.yaml`
 - `python -m hibachi_mm.main live --config config.local.yaml`
 
@@ -46,3 +48,9 @@ Live 실행은 아래를 모두 만족해야 합니다.
 - 환경변수 `HIBACHI_ENABLE_LIVE_TRADING=I_UNDERSTAND_PERP_RISK`
 - maker-only exit 강제(`maker_entry_only=true` + `emergency_taker_exit=false`) 구성 금지
 - `allow_unknown_open_orders=false`일 때 unknown order 존재 시 실행 금지
+
+
+## 보안 실행 체크리스트
+- `.env` 파일 권한을 `chmod 600 .env`로 제한하세요.
+- API 키/개인키를 yaml 본문에 넣지 말고 환경변수로만 주입하세요.
+- `security-check` 명령을 통과한 뒤에만 dry-run/live를 실행하세요.
