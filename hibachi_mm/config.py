@@ -155,9 +155,47 @@ class BotConfig:
         )
 
 
-def load_config(path: str | Path) -> BotConfig:
-    import yaml
+def _fallback_yaml_like(text: str) -> dict:
+    root: dict = {}
+    stack = [(-1, root)]
 
+    def parse_scalar(v: str):
+        v = v.strip()
+        if v in {"true", "false"}:
+            return v == "true"
+        if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+            return v[1:-1]
+        try:
+            if "." in v:
+                return float(v)
+            return int(v)
+        except Exception:
+            return v
+
+    for raw in text.splitlines():
+        if not raw.strip() or raw.strip().startswith("#"):
+            continue
+        indent = len(raw) - len(raw.lstrip(" "))
+        key, _, value = raw.strip().partition(":")
+        value = value.strip()
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+        parent = stack[-1][1]
+        if value == "":
+            parent[key] = {}
+            stack.append((indent, parent[key]))
+        else:
+            parent[key] = parse_scalar(value)
+    return root
+
+
+def load_config(path: str | Path) -> BotConfig:
     with open(path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+        text = f.read()
+    try:
+        import yaml
+
+        data = yaml.safe_load(text)
+    except Exception:
+        data = _fallback_yaml_like(text)
     return BotConfig.model_validate(data)

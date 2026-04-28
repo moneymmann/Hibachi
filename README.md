@@ -1,56 +1,75 @@
-# Hibachi Spread Bot (BTC/USDT-P)
+# Hibachi Spread Capture Control Center
 
-이 프로젝트는 **single-venue spread capture market making** 전략을 Hibachi perpetual futures에 맞춰 구현한 로컬 실행 봇입니다.
+이 프로젝트는 Hibachi BTC/USDT-P용 spread-capture 엔진과 로컬 웹 대시보드를 함께 제공합니다.
 
-## 매우 중요한 리스크 경고
-- 이 봇은 **무조건 수익을 보장하지 않습니다**.
-- single-venue maker spread capture는 무위험 차익거래가 아닙니다.
-- 한쪽만 체결되면 즉시 방향성 포지션 리스크가 생깁니다.
-- 본 봇의 우선순위는 **생존(청산/마진콜 방지)** 입니다.
-- `emergency_taker_exit=false` 구성은 실전(Live)에서 금지 수준으로 간주하세요.
+## 핵심 경고
+- 무조건 수익 전략이 아닙니다.
+- single-venue maker 전략은 한쪽 체결 시 방향성 리스크가 생깁니다.
+- LIVE 전 최소 24시간 dry-run-ui로 상태/경고/로그를 검증하세요.
 
-## 설계 핵심
-- 진입 주문: Post-Only/ALO maker-only
-- 포지션 해소: reduce-only passive → aggressive limit → IOC/market close
-- spread edge가 사라지면 즉시 신규 quote 중단
-- stale data, ws silence, volatility shock, funding blackout, drawdown/loss 초과 시 방어 모드
-- account sizing은 BTC 수량이 아니라 USDT equity/free margin/position notional 기반
+## 화면에서 확인 가능한 것
+처음 접속(`http://127.0.0.1:8787/dashboard`)하면 다음이 보여야 합니다.
+- Engine 상태(STARTING/RUNNING/ERROR/HALTED), 모드 배지(INSPECT/DRY RUN/LIVE)
+- Account/Risk/Market 요약 카드
+- Equity/Price 차트
+- Open Orders, Events 패널
 
-## 실행 전 권장사항
-1. 최소 24시간 dry-run 로그를 먼저 확인하세요.
-2. dedicated subaccount 사용을 강력히 권장합니다.
-3. 첫 live는 equity의 아주 작은 비율부터 시작하세요.
-
-## 설치 및 실행
+## 설치
 ```bash
 python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 cp .env.example .env
 cp config.example.yaml config.local.yaml
-# .env에 키 입력
 pytest -q
-python -m hibachi_mm.main inspect --config config.local.yaml
-python -m hibachi_mm.main security-check --config config.local.yaml
-python -m hibachi_mm.main dry-run --config config.local.yaml
-export HIBACHI_ENABLE_LIVE_TRADING=I_UNDERSTAND_PERP_RISK
-python -m hibachi_mm.main live --config config.local.yaml
 ```
 
-## CLI
-- `python -m hibachi_mm.main inspect --config config.local.yaml`
-- `python -m hibachi_mm.main security-check --config config.local.yaml`
-- `python -m hibachi_mm.main dry-run --config config.local.yaml`
-- `python -m hibachi_mm.main live --config config.local.yaml`
+## 명령어
+- inspect: `python -m hibachi_mm.main inspect --config config.local.yaml`
+- security-check: `python -m hibachi_mm.main security-check --config config.local.yaml`
+- dry-run engine only: `python -m hibachi_mm.main dry-run --config config.local.yaml`
+- live engine only: `python -m hibachi_mm.main live --config config.local.yaml`
+- dashboard only: `python -m hibachi_mm.main dashboard --config config.local.yaml`
+- dry-run + dashboard: `python -m hibachi_mm.main dry-run-ui --config config.local.yaml`
+- live + dashboard: `python -m hibachi_mm.main live-ui --config config.local.yaml`
 
-## Live Gate
-Live 실행은 아래를 모두 만족해야 합니다.
-- 환경변수 `HIBACHI_ENABLE_LIVE_TRADING=I_UNDERSTAND_PERP_RISK`
-- maker-only exit 강제(`maker_entry_only=true` + `emergency_taker_exit=false`) 구성 금지
-- `allow_unknown_open_orders=false`일 때 unknown order 존재 시 실행 금지
+## Windows PowerShell
+가상환경 활성화:
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
+dashboard만 실행:
+```powershell
+python -m hibachi_mm.main dashboard --config config.local.yaml
+```
 
-## 보안 실행 체크리스트
-- `.env` 파일 권한을 `chmod 600 .env`로 제한하세요.
-- API 키/개인키를 yaml 본문에 넣지 말고 환경변수로만 주입하세요.
-- `security-check` 명령을 통과한 뒤에만 dry-run/live를 실행하세요.
+dry-run + dashboard:
+```powershell
+python -m hibachi_mm.main dry-run-ui --config config.local.yaml
+```
+
+live + dashboard:
+```powershell
+$env:HIBACHI_ENABLE_LIVE_TRADING="I_UNDERSTAND_PERP_RISK"
+python -m hibachi_mm.main live-ui --config config.local.yaml
+```
+
+접속:
+- `http://127.0.0.1:8787`
+- `http://127.0.0.1:8787/dashboard`
+
+## 로그/상태 파일 위치
+- audit 로그: `logs/audit.jsonl`
+- 콘솔 로그: `logs/live-console.log` 또는 `logs/dryrun-console.log`
+- SQLite: `state/hibachi_bot.sqlite`
+
+## dashboard가 비어 있으면
+1. `security-check` 먼저 실행
+2. API 키/계정/키 env 값 확인
+3. `events` 패널의 error/warning 확인
+4. `logs/audit.jsonl` 확인
+
+## Live 주의사항
+- 환경변수 `HIBACHI_ENABLE_LIVE_TRADING=I_UNDERSTAND_PERP_RISK` 없으면 차단됩니다.
+- `maker_entry_only=true` + `emergency_taker_exit=false` 는 live 금지입니다.

@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hibachi Spread Capture Control Center</title>
+  <link rel="stylesheet" href="/static/app.css" />
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+<body>
+  <header><h1>Hibachi Spread Capture Control Center</h1><span id="modeBadge" class="badge">MODE</span></header>
+  <section class="grid cards">
+    <div class="card"><h3>Engine</h3><pre id="engine"></pre></div>
+    <div class="card"><h3>Account</h3><pre id="account"></pre></div>
+    <div class="card"><h3>Risk</h3><pre id="risk"></pre></div>
+    <div class="card"><h3>Market</h3><pre id="market"></pre></div>
+  </section>
+  <section class="grid charts">
+    <div class="card"><div id="equityChart"></div></div>
+    <div class="card"><div id="priceChart"></div></div>
+  </section>
+  <section class="grid">
+    <div class="card"><h3>Open Orders</h3><table id="orders"></table></div>
+    <div class="card"><h3>Events</h3><pre id="events"></pre></div>
+  </section>
+  <script src="/static/app.js"></script>
+</body>
+</html>
