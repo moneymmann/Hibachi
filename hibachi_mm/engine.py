@@ -51,6 +51,7 @@ class TradingEngine:
         if not self.console_logger.handlers:
             self.console_logger.addHandler(logging.FileHandler(f"logs/{console_name}-console.log", encoding="utf-8"))
         self._running = False
+        self._last_quote_ms = 0
 
     async def run(self) -> None:
         self._running = True
@@ -59,12 +60,17 @@ class TradingEngine:
         while self._running:
             now_ms = int(time.time() * 1000)
             try:
-                market = self.gateway.fetch_market(self.config.exchange.symbol)
-                account = self.gateway.fetch_account()
+                quote_interval_ms = int(self.config.strategy.quote_interval_ms)
+                should_refresh_quote = (now_ms - self._last_quote_ms) >= quote_interval_ms
+
+                market = self.gateway.fetch_market(self.config.exchange.symbol) if should_refresh_quote else None
+                account = self.gateway.fetch_account() if should_refresh_quote else None
                 if market:
                     await self.store.update_market({**market, "net_edge_bps": self.store.quote_decision.get("net_edge_bps", "0")})
+                    self.audit.log("market_snapshot", market)
                 if account:
                     await self.store.update_account(account)
+                    self.audit.log("account_snapshot", account)
 
                 if market and account:
                     snapshot = MarketSnapshot(
@@ -101,7 +107,9 @@ class TradingEngine:
                     )
                     rules = ContractRules(self.config.exchange.symbol, Decimal("0.1"), Decimal("0.001"), Decimal("0.001"), Decimal("5"), Decimal("0.05"), Decimal("0.025"), "trading")
                     risk_result = self.risk.evaluate_market_health(snapshot, now_ms, 0, Decimal("0"), Decimal("0"))
-                    await self.store.update_risk({"ts_ms": now_ms, "scenario": risk_result.scenario.value, "free_margin_pct": account["free_margin_pct"], "leverage": account["leverage"], "liquidation_risk_pct": account["liquidation_risk_pct"], "reason": risk_result.reason})
+                    risk_rec = {"ts_ms": now_ms, "scenario": risk_result.scenario.value, "free_margin_pct": account["free_margin_pct"], "leverage": account["leverage"], "liquidation_risk_pct": account["liquidation_risk_pct"], "reason": risk_result.reason}
+                    await self.store.update_risk(risk_rec)
+                    self.audit.log("risk_snapshot", risk_rec)
                     q = self.strategy.compute_quote(snapshot, acc, rules, Decimal("0"), Decimal("0"), funding_blackout=False)
                     qrec = {
                         "ts_ms": now_ms,
@@ -117,11 +125,33 @@ class TradingEngine:
                         "reason": q.reason,
                     }
                     await self.store.update_quote_decision(qrec)
+                    self.audit.log("quote_decision", qrec)
                     if self.mode == "dry-run" and (q.should_bid or q.should_ask):
-                        await self.store.publish_event("order_submitted", {"type": "place_order_intent", "decision": qrec})
+                        intent = {"type": "order_intent", "mode": "dry-run", "decision": qrec}
+                        await self.store.publish_event("order_intent", intent)
+                        self.audit.log("order_intent", intent)
                     if self.mode == "live" and q.should_bid and q.bid_price and q.bid_qty:
+                        intent = {
+                            "type": "place_order_intent",
+                            "mode": "live",
+                            "symbol": self.config.exchange.symbol,
+                            "side": "BUY",
+                            "price": str(q.bid_price),
+                            "qty": str(q.bid_qty),
+                            "post_only": True,
+                        }
+                        await self.store.publish_event("place_order_intent", intent)
+                        self.audit.log("place_order_intent", intent)
                         res = self.gateway.place_limit_entry(self.config.exchange.symbol, "BUY", q.bid_price, q.bid_qty, post_only=True)
-                        await self.store.publish_event("order_submitted", {"side": "BUY", "response": str(res)})
+                        if res is not None:
+                            success = {"type": "place_order_success", "side": "BUY", "response": str(res)}
+                            await self.store.publish_event("place_order_success", success)
+                            self.audit.log("place_order_success", success)
+                        else:
+                            err = {"type": "place_order_error", "side": "BUY", "reason": "sdk returned None"}
+                            await self.store.publish_event("place_order_error", err, level="error")
+                            self.audit.log("place_order_error", err)
+                    self._last_quote_ms = now_ms
 
                 await self.store.update_engine_status("RUNNING", self.mode, self.config.exchange.symbol)
                 self.audit.log("heartbeat", {"mode": self.mode, "status": "RUNNING"})
