@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hibachi-spread-capture-pro"
+version = "0.1.0"
+description = "Hibachi BTC/USDT-P spread capture bot with dashboard"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "hibachi-xyz==0.3.0",
+  "fastapi",
+  "uvicorn",
+  "pydantic",
+  "pydantic-settings",
+  "PyYAML",
+  "python-dotenv",
+  "orjson",
+  "anyio",
+  "pytest",
+  "pytest-asyncio",
+  "httpx"
+]
+
+[tool.setuptools.packages.find]
+include = ["hibachi_mm*"]
