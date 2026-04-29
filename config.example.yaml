@@ -1,0 +1,58 @@
+exchange:
+  venue: hibachi
+  environment: production
+  symbol: BTC/USDT-P
+  dedicated_subaccount_confirmed: false
+  allow_unknown_open_orders: false
+strategy:
+  mode: professional_spread_capture
+  sizing_mode: equity_percent_margin
+  entry_margin_pct: "0.7"
+  max_order_margin_pct: "1.5"
+  max_total_leverage: "0.8"
+  max_order_notional_usdt: "25"
+  min_gross_spread_ticks: 1
+  use_inside_quote: false
+  inside_quote_min_spread_ticks: 3
+  quote_interval_ms: 250
+  quote_ttl_ms: 1200
+  min_reprice_ticks: 1
+  max_active_orders_per_side: 1
+  min_expected_edge_bps: "0.02"
+  maker_fee_bps_override: "0.0"
+  taker_fee_bps_estimate: "4.5"
+  latency_cost_bps: "0.02"
+  adverse_selection_min_bps: "0.05"
+  adverse_selection_max_bps: "5.0"
+  funding_buffer_bps: "0.0"
+  mark_deviation_buffer_bps: "0.0"
+  target_position_notional_pct: "0.0"
+  inventory_skew_strength: "2.0"
+  max_net_position_notional_pct: "15.0"
+  inventory_resolution_threshold_pct: "8.0"
+  flat_position_threshold_pct: "1.0"
+  take_profit_ticks: 1
+  take_profit_mode: maker_first
+  passive_take_profit_timeout_ms: 1500
+  aggressive_exit_after_ms: 3500
+  adverse_move_soft_bps: "3.0"
+  adverse_move_hard_bps: "7.0"
+  emergency_reduce_only_exit: true
+  max_1s_mid_move_bps: "8.0"
+  max_5s_mid_move_bps: "18.0"
+  min_depth_usdt_for_quote: "300"
+  max_spread_bps_for_quote: "30.0"
+  orderbook_imbalance_block_threshold: "0.85"
+risk:
+  max_daily_loss_usdt: "3"
+  max_equity_drawdown_pct: "1.0"
+  min_free_margin_pct: "35.0"
+  max_stale_market_data_ms: 2500
+  max_ws_silence_ms: 5000
+  cancel_bot_orders_on_shutdown: true
+  cancel_bot_orders_on_stale_data: true
+  cancel_bot_orders_on_daily_loss: true
+state:
+  sqlite_path: ./state/hibachi_bot.sqlite
+logging:
+  audit_log_path: ./logs/audit.jsonl
