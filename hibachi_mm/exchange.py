@@ -41,6 +41,9 @@ class HibachiGateway:
     def fetch_market(self, symbol: str) -> dict[str, Any] | None:
         if self.client is None:
             return None
+
+    def get_market_snapshot(self, symbol: str) -> dict[str, Any] | None:
+        return self.fetch_market(symbol)
         try:
             ob = self.client.get_orderbook(symbol=symbol, depth=20)
             best_bid = Decimal(str(ob["bids"][0][0]))
@@ -64,6 +67,9 @@ class HibachiGateway:
     def fetch_account(self) -> dict[str, Any] | None:
         if self.client is None:
             return None
+
+    def get_account_snapshot(self) -> dict[str, Any] | None:
+        return self.fetch_account()
         try:
             cap = self.client.get_capital_balance()
             acc = self.client.get_account_info()

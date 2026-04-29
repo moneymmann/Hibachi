@@ -63,8 +63,18 @@ class TradingEngine:
                 quote_interval_ms = int(self.config.strategy.quote_interval_ms)
                 should_refresh_quote = (now_ms - self._last_quote_ms) >= quote_interval_ms
 
-                market = self.gateway.fetch_market(self.config.exchange.symbol) if should_refresh_quote else None
-                account = self.gateway.fetch_account() if should_refresh_quote else None
+                if should_refresh_quote:
+                    if hasattr(self.gateway, "get_market_snapshot"):
+                        market = self.gateway.get_market_snapshot(self.config.exchange.symbol)
+                    else:
+                        market = self.gateway.fetch_market(self.config.exchange.symbol)
+                    if hasattr(self.gateway, "get_account_snapshot"):
+                        account = self.gateway.get_account_snapshot()
+                    else:
+                        account = self.gateway.fetch_account()
+                else:
+                    market = None
+                    account = None
                 if market:
                     await self.store.update_market({**market, "net_edge_bps": self.store.quote_decision.get("net_edge_bps", "0")})
                     self.audit.log("market_snapshot", market)
@@ -73,6 +83,14 @@ class TradingEngine:
                     await self.store.update_account(account)
                     self.audit.log("account_snapshot", account)
                     await self.store.publish_event("account_snapshot", account)
+                if should_refresh_quote and market is None:
+                    warn_market = {"type": "no_market_snapshot", "reason": "gateway returned none", "symbol": self.config.exchange.symbol}
+                    await self.store.publish_event("warning", warn_market, level="warn")
+                    self.audit.log("no_market_snapshot", warn_market)
+                if should_refresh_quote and account is None:
+                    warn_account = {"type": "no_account_snapshot", "reason": "gateway returned none"}
+                    await self.store.publish_event("warning", warn_account, level="warn")
+                    self.audit.log("no_account_snapshot", warn_account)
 
                 if market and account:
                     snapshot = MarketSnapshot(
