@@ -54,7 +54,10 @@ async def run_engine_and_dashboard(cfg, mode: str, host: str, port: int) -> None
 
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, _stop)
+        try:
+            loop.add_signal_handler(sig, _stop)
+        except NotImplementedError:
+            signal.signal(sig, lambda *_: _stop())
 
     await stop_event.wait()
     await asyncio.gather(engine_task, server_task, return_exceptions=True)

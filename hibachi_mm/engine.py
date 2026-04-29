@@ -68,9 +68,11 @@ class TradingEngine:
                 if market:
                     await self.store.update_market({**market, "net_edge_bps": self.store.quote_decision.get("net_edge_bps", "0")})
                     self.audit.log("market_snapshot", market)
+                    await self.store.publish_event("market_snapshot", market)
                 if account:
                     await self.store.update_account(account)
                     self.audit.log("account_snapshot", account)
+                    await self.store.publish_event("account_snapshot", account)
 
                 if market and account:
                     snapshot = MarketSnapshot(
@@ -110,6 +112,7 @@ class TradingEngine:
                     risk_rec = {"ts_ms": now_ms, "scenario": risk_result.scenario.value, "free_margin_pct": account["free_margin_pct"], "leverage": account["leverage"], "liquidation_risk_pct": account["liquidation_risk_pct"], "reason": risk_result.reason}
                     await self.store.update_risk(risk_rec)
                     self.audit.log("risk_snapshot", risk_rec)
+                    await self.store.publish_event("risk_snapshot", risk_rec)
                     q = self.strategy.compute_quote(snapshot, acc, rules, Decimal("0"), Decimal("0"), funding_blackout=False)
                     qrec = {
                         "ts_ms": now_ms,
@@ -126,10 +129,15 @@ class TradingEngine:
                     }
                     await self.store.update_quote_decision(qrec)
                     self.audit.log("quote_decision", qrec)
+                    await self.store.publish_event("quote_decision", qrec)
                     if self.mode == "dry-run" and (q.should_bid or q.should_ask):
                         intent = {"type": "order_intent", "mode": "dry-run", "decision": qrec}
                         await self.store.publish_event("order_intent", intent)
                         self.audit.log("order_intent", intent)
+                    elif self.mode == "dry-run":
+                        no_order = {"type": "no_order_reason", "mode": "dry-run", "reason": qrec.get("reason", "quote_not_eligible")}
+                        await self.store.publish_event("no_order_reason", no_order)
+                        self.audit.log("no_order_reason", no_order)
                     if self.mode == "live" and q.should_bid and q.bid_price and q.bid_qty:
                         intent = {
                             "type": "place_order_intent",
@@ -151,6 +159,10 @@ class TradingEngine:
                             err = {"type": "place_order_error", "side": "BUY", "reason": "sdk returned None"}
                             await self.store.publish_event("place_order_error", err, level="error")
                             self.audit.log("place_order_error", err)
+                    elif self.mode == "live":
+                        no_order = {"type": "no_order_reason", "mode": "live", "reason": qrec.get("reason", "quote_not_eligible")}
+                        await self.store.publish_event("no_order_reason", no_order)
+                        self.audit.log("no_order_reason", no_order)
                     self._last_quote_ms = now_ms
 
                 await self.store.update_engine_status("RUNNING", self.mode, self.config.exchange.symbol)
