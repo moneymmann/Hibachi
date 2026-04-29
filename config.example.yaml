@@ -1,0 +1,59 @@
+exchange:
+  venue: hibachi
+  environment: production
+  symbol: BTC/USDT-P
+  api_endpoint_env: HIBACHI_API_ENDPOINT_PRODUCTION
+  data_api_endpoint_env: HIBACHI_DATA_API_ENDPOINT_PRODUCTION
+  api_key_env: HIBACHI_API_KEY_PRODUCTION
+  account_id_env: HIBACHI_ACCOUNT_ID_PRODUCTION
+  private_key_env: HIBACHI_PRIVATE_KEY_PRODUCTION
+  public_key_env: HIBACHI_PUBLIC_KEY_PRODUCTION
+  api_endpoint: https://api.hibachi.xyz
+  data_api_endpoint: https://data-api.hibachi.xyz
+  dedicated_subaccount_confirmed: false
+  allow_unknown_open_orders: false
+
+strategy:
+  sizing_mode: equity_percent_margin
+  entry_margin_pct: "3.0"
+  max_order_margin_pct: "8.0"
+  max_total_leverage: "2.0"
+  max_order_notional_usdt: "1500"
+  min_net_edge_bps: "1.2"
+  edge_size_ramp_bps: "4.0"
+  max_edge_size_multiplier: "4.0"
+  top_depth_levels_for_cap: 3
+  top_liquidity_participation_pct: "25.0"
+  target_position_notional_pct: "0.0"
+  position_skew_strength: "1.8"
+  min_side_size_multiplier: "0.20"
+  max_side_size_multiplier: "2.00"
+  latency_buffer_bps: "0.6"
+  adverse_selection_buffer_bps: "1.5"
+  funding_buffer_bps: "0.5"
+  mark_deviation_buffer_bps: "0.5"
+  quote_interval_ms: 500
+  quote_ttl_ms: 3500
+  min_reprice_ticks: 1
+  creation_deadline_sec: 2
+  use_inside_quote: true
+  use_post_only: true
+
+risk:
+  max_daily_loss_usdt: "30"
+  max_equity_drawdown_pct: "5.0"
+  max_net_position_notional_pct: "80.0"
+  max_abs_position_units: null
+  min_free_margin_pct: "20.0"
+  max_stale_market_data_ms: 2500
+  max_ws_silence_ms: 5000
+  cancel_bot_orders_on_shutdown: true
+  cancel_bot_orders_on_stale_data: true
+  cancel_bot_orders_on_edge_loss: true
+  cancel_bot_orders_on_daily_loss: true
+
+state:
+  sqlite_path: ./state/hibachi_bot.sqlite
+
+logging:
+  audit_log_path: ./logs/audit.jsonl
