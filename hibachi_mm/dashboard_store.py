@@ -12,12 +12,12 @@ class DashboardStore:
     def __init__(self, state: StateStore, bus: DashboardEventBus):
         self.state = state
         self.bus = bus
-        self.engine_status: dict[str, Any] = {"status": "HALTED", "mode": "inspect", "symbol": "", "uptime_sec": 0}
-        self.account: dict[str, Any] = {}
-        self.market: dict[str, Any] = {}
-        self.risk: dict[str, Any] = {}
-        self.position: dict[str, Any] = {}
-        self.quote_decision: dict[str, Any] = {}
+        self.engine_status: dict[str, Any] = {"status": "WAITING", "mode": "dry-run", "symbol": "BTC/USDT-P", "uptime_sec": 0, "last_heartbeat_ts": None}
+        self.account: dict[str, Any] = {"equity": "-", "balance": "-", "unrealized_pnl": "-"}
+        self.market: dict[str, Any] = {"best_bid": "-", "best_ask": "-", "mid": "-"}
+        self.risk: dict[str, Any] = {"scenario": "WAITING", "reason": "waiting for engine events"}
+        self.position: dict[str, Any] = {"qty": "0", "notional": "0", "direction": "FLAT"}
+        self.quote_decision: dict[str, Any] = {"reason": "waiting for engine events"}
         self.started_at = int(time.time())
         self.price_curve: deque[dict[str, Any]] = deque(maxlen=3600)
         self.pnl_curve: deque[dict[str, Any]] = deque(maxlen=3600)

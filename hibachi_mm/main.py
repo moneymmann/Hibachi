@@ -7,7 +7,6 @@ import signal
 
 from hibachi_mm.config import load_config
 from hibachi_mm.dashboard_events import DashboardEventBus
-from hibachi_mm.dashboard_server import create_dashboard_app
 from hibachi_mm.dashboard_store import DashboardStore
 from hibachi_mm.engine import LiveGateError, TradingEngine, validate_live_gate
 from hibachi_mm.security import run_security_checks
@@ -25,6 +24,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 async def run_dashboard_only(store: DashboardStore, state: StateStore, host: str, port: int) -> None:
     import uvicorn
+    from hibachi_mm.dashboard_server import create_dashboard_app
+
     app = create_dashboard_app(store, state)
     server = uvicorn.Server(uvicorn.Config(app, host=host, port=port, log_level="info"))
     await server.serve()
@@ -36,6 +37,8 @@ async def run_engine_and_dashboard(cfg, mode: str, host: str, port: int) -> None
     store = DashboardStore(state, bus)
     engine = TradingEngine(cfg, mode=mode, store=store)
     import uvicorn
+    from hibachi_mm.dashboard_server import create_dashboard_app
+
     app = create_dashboard_app(store, state)
     server = uvicorn.Server(uvicorn.Config(app, host=host, port=port, log_level="info"))
 

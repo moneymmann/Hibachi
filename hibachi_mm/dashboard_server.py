@@ -3,18 +3,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
 from hibachi_mm.dashboard_store import DashboardStore
 from hibachi_mm.state import StateStore
 
 
-def create_dashboard_app(store: DashboardStore, state: StateStore):
-    try:
-        from fastapi import FastAPI, WebSocket
-        from fastapi.responses import FileResponse
-        from fastapi.staticfiles import StaticFiles
-    except Exception as exc:
-        raise RuntimeError("FastAPI is required for dashboard") from exc
-
+def create_dashboard_app(store: DashboardStore, state: StateStore) -> FastAPI:
     app = FastAPI(title="Hibachi Spread Capture Control Center")
     static_dir = Path(__file__).resolve().parent / "dashboard_static"
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
@@ -81,15 +78,17 @@ def create_dashboard_app(store: DashboardStore, state: StateStore):
         return store.engine_status
 
     @app.websocket("/ws/dashboard")
-    async def ws_dashboard(ws: WebSocket) -> None:
-        await ws.accept()
+    async def dashboard_ws(websocket: WebSocket) -> None:
+        await websocket.accept()
         q = await store.bus.subscribe()
         try:
             for item in store.bus.recent(100):
-                await ws.send_text(json.dumps(item))
+                await websocket.send_text(json.dumps(item))
             while True:
                 item = await q.get()
-                await ws.send_text(json.dumps(item))
+                await websocket.send_text(json.dumps(item))
+        except WebSocketDisconnect:
+            pass
         finally:
             await store.bus.unsubscribe(q)
 
