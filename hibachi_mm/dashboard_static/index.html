@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hibachi Spread Capture Control Center</title>
+  <link rel="stylesheet" href="/static/app.css" />
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Hibachi Spread Capture Control Center</h1>
+      <p class="subtitle">Real-time execution, risk and inventory monitor</p>
+    </div>
+    <div class="badges">
+      <span id="engineStatusBadge" class="badge neutral">WAITING</span>
+      <span id="modeBadge" class="badge neutral">DRY-RUN</span>
+      <span id="wsBadge" class="badge warn">WS DISCONNECTED</span>
+      <span id="apiBadge" class="badge warn">API UNKNOWN</span>
+      <span id="riskBadge" class="badge neutral">RISK UNKNOWN</span>
+    </div>
+  </header>
+
+  <section id="staleBanner" class="banner hidden">⚠ Data looks stale. Check websocket/API connectivity.</section>
+
+  <section class="meta-row">
+    <div>Symbol: <strong id="symbol">-</strong></div>
+    <div>Last heartbeat: <strong id="lastHeartbeat">-</strong></div>
+    <div>Last update: <strong id="lastUpdate">-</strong></div>
+  </section>
+
+  <section class="kpi-grid" id="kpiGrid"></section>
+
+  <section class="charts-grid">
+    <div class="panel"><h3>Equity</h3><div id="chartEquity" class="chart"></div></div>
+    <div class="panel"><h3>PnL</h3><div id="chartPnl" class="chart"></div></div>
+    <div class="panel"><h3>Mid / Mark Price</h3><div id="chartPrice" class="chart"></div></div>
+    <div class="panel"><h3>Spread bps / Net Edge bps</h3><div id="chartSpread" class="chart"></div></div>
+    <div class="panel"><h3>Position Size</h3><div id="chartPosition" class="chart"></div></div>
+    <div class="panel"><h3>Order Activity</h3><div id="chartOrderActivity" class="chart"></div></div>
+  </section>
+
+  <section class="tables-grid">
+    <div class="panel"><h3>Open Orders</h3><table id="openOrdersTable"></table></div>
+    <div class="panel"><h3>Recent Fills</h3><table id="fillsTable"></table></div>
+    <div class="panel"><h3>Position Summary</h3><table id="positionSummaryTable"></table></div>
+    <div class="panel"><h3>Risk Alerts</h3><ul id="riskAlerts" class="alerts"></ul></div>
+  </section>
+
+  <section class="panel">
+    <div class="event-header">
+      <h3>Event Log (latest 200)</h3>
+      <select id="eventFilter">
+        <option value="all">All</option>
+      </select>
+    </div>
+    <div id="eventLog" class="event-log">No events yet. Waiting for engine events...</div>
+  </section>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
