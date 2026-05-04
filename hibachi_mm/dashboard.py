@@ -1,30 +1,36 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
-import asyncio, os, json
+from __future__ import annotations
+from pathlib import Path
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+import json
 
-def create_app(store):
-    app=FastAPI()
+
+def create_dashboard_app(audit_path: str):
+    app = FastAPI()
+
     @app.get('/health')
-    async def health(): return {'ok':True}
-    @app.get('/dashboard')
-    async def dashboard(): return FileResponse(os.path.join(os.path.dirname(__file__),'dashboard_static','index.html'))
-    @app.get('/dashboard_static/{name}')
-    async def static_file(name:str): return FileResponse(os.path.join(os.path.dirname(__file__),'dashboard_static',name))
-    @app.get('/api/snapshot')
-    async def snap(): return store.snapshot
+    async def health():
+        return {"ok": True}
+
     @app.get('/api/events')
-    async def events(limit:int=200): return store.events[-limit:]
-    @app.get('/api/orders')
-    async def orders(): return [e for e in store.events if 'order' in e.get('event','')]
-    @app.get('/api/fills')
-    async def fills(): return [e for e in store.events if e.get('event')=='order_filled']
-    @app.websocket('/ws/dashboard')
-    async def dashboard_ws(websocket: WebSocket):
-        await websocket.accept()
-        try:
-            while True:
-                await websocket.send_text(json.dumps(store.snapshot))
-                await asyncio.sleep(1)
-        except WebSocketDisconnect:
-            return
+    async def events(limit: int = 200):
+        p = Path(audit_path)
+        if not p.exists():
+            return []
+        rows = p.read_text(encoding='utf-8').splitlines()[-limit:]
+        return [json.loads(x) for x in rows if x.strip()]
+
+    @app.get('/dashboard')
+    async def dashboard():
+        return HTMLResponse("""
+        <html><body style='background:#111;color:#ddd;font-family:monospace'>
+        <h2>Hibachi MVP Dashboard</h2>
+        <div id='s'>loading...</div>
+        <script>
+        async function t(){let r=await fetch('/api/events?limit=50');let j=await r.json();
+        document.getElementById('s').innerHTML = '<pre>'+JSON.stringify(j,null,2)+'</pre>';}
+        setInterval(t,1000); t();
+        </script></body></html>
+        """)
+
     return app

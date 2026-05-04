@@ -1,2 +1,2 @@
 @echo off
-powershell -ExecutionPolicy Bypass -NoProfile -File "%~dp0RUN_LIVE_UI.ps1"
+powershell -NoExit -ExecutionPolicy Bypass -File "%~dp0RUN_LIVE_UI.ps1"
